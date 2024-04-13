@@ -1,13 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { Request, Response, NextFunction } = require('express');
 const UserModel = require('../model/user.model');
-
-const signToken = id => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRES_IN
-    });
-};
-
+const crypto = require('crypto')
 /**
  * 
  * @param {Request} req 
@@ -48,8 +42,8 @@ exports.checkAccount = async (req, res, next) => {
 exports.verifyOTP = async (req, res, next) => {
     try {
         const { phone, OTP } = req.body;
-
-        let userObj = await UserModel.findOne({ phone, OTP })
+        const hashedToken = crypto.createHash('sha256').update(OTP).digest('hex');
+        let userObj = await UserModel.findOne({ phone, OTP: hashedToken })
         if (!userObj) {
             return res.status(203).json({
                 status: false,
@@ -95,6 +89,9 @@ exports.updateProfile = async (req, res, next) => {
             user: userObj
         })
     } catch (e) {
-        return res.status(500)
+        return res.status(500).json({
+            status: true,
+            message: "Something Went Wrong"
+        })
     }
 }
